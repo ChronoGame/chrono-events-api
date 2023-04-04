@@ -75,8 +75,8 @@ def handle_events_path(event, list_of_event_dicts, num_events=6):
     return response
 
 
-def handle_categories_path():
-    all_cats = get_all_cats_from_events_tsv(dict_values)
+def handle_categories_path(list_of_event_dicts):
+    all_cats = get_all_cats_from_events_tsv(list_of_event_dicts)
     response = {
         'statusCode': 200,
         'body': json.dumps({
@@ -103,7 +103,7 @@ def handler(event, context):
     if event['path'] == '/events':
         response = handle_events_path(event, dict_values, num_events=1)
     elif event['path'] == '/categories':
-        response = handle_categories_path()
+        response = handle_categories_path(dict_values)
     else:
         response = {'statusCode':400, 'body':'not found'}
     return response

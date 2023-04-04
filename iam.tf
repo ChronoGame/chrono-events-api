@@ -1,12 +1,19 @@
 
-resource "aws_lambda_permission" "apigw_lambda_permission" {
-  statement_id  = "AllowAPIGatewayInvoke"
+resource "aws_lambda_permission" "events_apigw_lambda_permission" {
+  statement_id  = "AllowAPIGatewayInvoke-Events"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.hello_world.function_name
   principal     = "apigateway.amazonaws.com"
   source_arn = "${aws_api_gateway_rest_api.chrono_api.execution_arn}/*/${aws_api_gateway_method.events_method.http_method}${aws_api_gateway_resource.events_resource.path}"
 }
 
+resource "aws_lambda_permission" "categories_apigw_lambda_permission" {
+  statement_id  = "AllowAPIGatewayInvoke-Categories"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.hello_world.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn = "${aws_api_gateway_rest_api.chrono_api.execution_arn}/*/${aws_api_gateway_method.categories_method.http_method}${aws_api_gateway_resource.categories_resource.path}"
+}
 
 resource "aws_iam_policy" "s3_read_policy" {
   name        = "s3_read_policy"

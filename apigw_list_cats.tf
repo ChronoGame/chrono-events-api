@@ -11,8 +11,8 @@ resource "aws_api_gateway_method" "categories_method" {
   authorization = "NONE"
 
   request_parameters = {
-    # "method.request.querystring.cat_filter" = true
-    # "method.request.querystring.num_events" = true
+    "method.request.querystring.cat_filter" = true
+    "method.request.querystring.num_events" = true
   }
 }
 
@@ -26,7 +26,7 @@ resource "aws_api_gateway_integration" "categories_integration" {
   uri                     = aws_lambda_function.hello_world.invoke_arn
 
   request_parameters = {
-    # "integration.request.querystring.cat_filter" = "method.request.querystring.cat_filter"
-    # "integration.request.querystring.num_events" = "method.request.querystring.num_events"
+    "integration.request.querystring.cat_filter" = "method.request.querystring.cat_filter"
+    "integration.request.querystring.num_events" = "method.request.querystring.num_events"
   }
 }
