@@ -23,3 +23,9 @@ popd
 
 
 terraform apply -auto-approve -var deployment_number="$DEPLOYMENT_NUMBER"
+
+
+curl https://ikra79u7u7.execute-api.us-east-1.amazonaws.com/prod/events\?cat_filter\=science\&num_events\=2\;
+curl https://ikra79u7u7.execute-api.us-east-1.amazonaws.com/prod/categories;
+
+
