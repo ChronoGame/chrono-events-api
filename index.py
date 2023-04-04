@@ -1,6 +1,7 @@
 import json, boto3, csv, random, datetime
 from io import StringIO
 from functools import partial
+from collections import defaultdict
 
 
 # Expects a tsv of events with a header row: `name    year    link    cat\n`
@@ -39,35 +40,72 @@ def cat_is_filter_value(event: dict, filter_value: str=None) -> bool:
     cats = event['cat'].split(',')
     return filter_value in cats
 
+def get_all_cats_from_events_tsv(list_of_event_dicts:list):
+    all_cats = []
+    for event in list_of_event_dicts:
+        cats = event['cat'].split(',')
+        all_cats.append(cats)
+
+    cat_counts = defaultdict(int)
+    for cat_list in all_cats:
+        for cat in cat_list:
+            cat_counts[cat] += 1
+    
+    return dict(cat_counts)
+
+def handle_events_path(event, list_of_event_dicts, num_events=6):
+    if event.get('queryStringParameters'):
+        cat_filter = event['queryStringParameters'].get('cat_filter', None)
+        partial_filter_by_cat = partial(cat_is_filter_value, filter_value=cat_filter)
+        list_of_event_dicts = list(filter(partial_filter_by_cat, list_of_event_dicts))
+        
+        num_events = int(event['queryStringParameters'].get('num_events', num_events)) 
+
+    seed_val = seed_value()
+    random.seed(seed_val)
+    random.shuffle(list_of_event_dicts)
+    
+    response = {
+        'statusCode': 200,
+        'body': json.dumps({
+            'seed_value': seed_val,
+            'event_list': list_of_event_dicts[:num_events]
+        })
+    }
+    return response
+
+
+def handle_categories_path():
+    all_cats = get_all_cats_from_events_tsv(dict_values)
+    response = {
+        'statusCode': 200,
+        'body': json.dumps({
+            'all_cats': all_cats,
+        })
+    }
+
+    return response
 
 def handler(event, context):
 
     s3 = boto3.client('s3')    
+
+    # session = boto3.Session(profile_name='tjwdev')
+    # # Create an S3 client using the session
+    # s3 = session.client('s3')
+
     bucket_name = 'chrono-events-api'
     object_key = 'events.tsv'
     num_events = 6
 
     dict_values = pull_events_tsv_from_s3(s3, bucket_name, object_key)
     
-    if event.get('queryStringParameters'):
-        cat_filter = event['queryStringParameters'].get('cat_filter', None)
-        partial_filter_by_cat = partial(cat_is_filter_value, filter_value=cat_filter)
-        dict_values = list(filter(partial_filter_by_cat, dict_values))
-
-        num_events = int(event['queryStringParameters'].get('num_events', num_events))
-
-
-    seed_val = seed_value()
-    random.seed(seed_val)
-    random.shuffle(dict_values)
-    
-    response = {
-        'statusCode': 200,
-        'body': json.dumps({
-            'seed_value': seed_val,
-            'event_list': dict_values[:num_events]
-        })
-    }
+    if event['path'] == '/events':
+        response = handle_events_path(event, dict_values, num_events=1)
+    elif event['path'] == '/categories':
+        response = handle_categories_path()
+    else:
+        response = {'statusCode':400, 'body':'not found'}
     return response
 
 
