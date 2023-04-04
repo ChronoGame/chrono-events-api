@@ -4,7 +4,7 @@ resource "aws_lambda_permission" "apigw_lambda_permission" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.hello_world.function_name
   principal     = "apigateway.amazonaws.com"
-  source_arn = "${aws_api_gateway_rest_api.hello_world_api.execution_arn}/*/${aws_api_gateway_method.hello_world_method.http_method}${aws_api_gateway_resource.hello_world_resource.path}"
+  source_arn = "${aws_api_gateway_rest_api.chrono_api.execution_arn}/*/${aws_api_gateway_method.events_method.http_method}${aws_api_gateway_resource.events_resource.path}"
 }
 
 
@@ -29,4 +29,72 @@ resource "aws_iam_policy" "s3_read_policy" {
 resource "aws_iam_role_policy_attachment" "s3_read_policy_attachment" {
   policy_arn = aws_iam_policy.s3_read_policy.arn
   role       = aws_iam_role.lambda_execution_role.name
+}
+
+resource "aws_iam_policy" "lambda_logs_policy" {
+  name        = "lambda_logs_policy"
+  description = "A policy to allow Lambda function to create and write logs to CloudWatch Logs"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ]
+        Effect   = "Allow"
+        Resource = "arn:aws:logs:*:*:*"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_logs_policy_attachment" {
+  policy_arn = aws_iam_policy.lambda_logs_policy.arn
+  role       = aws_iam_role.lambda_execution_role.name
+}
+
+resource "aws_iam_policy" "api_gateway_logs_policy" {
+  name        = "api_gateway_logs_policy"
+  description = "A policy to allow API Gateway to write logs to CloudWatch Logs"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents",
+          "logs:DescribeLogStreams"
+        ]
+        Effect   = "Allow"
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "api_gateway_logs_policy_attachment" {
+  policy_arn = aws_iam_policy.api_gateway_logs_policy.arn
+  role       = aws_iam_role.api_gateway_execution_role.name
+}
+
+resource "aws_iam_role" "api_gateway_execution_role" {
+  name = "api_gateway_execution_role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "apigateway.amazonaws.com"
+        }
+      }
+    ]
+  })
 }
