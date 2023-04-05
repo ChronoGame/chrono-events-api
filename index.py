@@ -20,7 +20,7 @@ def pull_events_tsv_from_s3(s3_session_client: boto3.Session.client,
     return list_of_event_dicts
 
 
-def seed_value() -> int:
+def calculate_days_since_start() -> int:
     """calculate num days since a set date in UTC"""
     start_date = datetime.datetime(2023, 4, 1, tzinfo=datetime.timezone.utc)
     current_date = datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc)
@@ -53,7 +53,22 @@ def get_all_cats_from_events_tsv(list_of_event_dicts:list):
     
     return dict(cat_counts)
 
-def handle_events_path(event, list_of_event_dicts, num_events=6):
+    if not unique_random_shuffle:
+        random.seed(game_id)
+        random.shuffle(list_of_event_dicts)  
+    else:
+        random.shuffle(list_of_event_dicts)
+
+
+def handle_events_path(event, list_of_event_dicts, num_events=6, unique_random=False):
+    game_id = calculate_days_since_start()
+
+    if unique_random:
+        random.shuffle(list_of_event_dicts)
+    else:
+        random.seed(game_id)
+        random.shuffle(list_of_event_dicts)
+
     if event.get('queryStringParameters'):
         cat_filter = event['queryStringParameters'].get('cat_filter', None)
         partial_filter_by_cat = partial(cat_is_filter_value, filter_value=cat_filter)
@@ -61,14 +76,12 @@ def handle_events_path(event, list_of_event_dicts, num_events=6):
         
         num_events = int(event['queryStringParameters'].get('num_events', num_events)) 
 
-    seed_val = seed_value()
-    random.seed(seed_val)
-    random.shuffle(list_of_event_dicts)
+
     
     response = {
         'statusCode': 200,
         'body': json.dumps({
-            'seed_value': seed_val,
+            'seed_value': game_id,
             'event_list': list_of_event_dicts[:num_events]
         })
     }
@@ -100,7 +113,9 @@ def handler(event, context):
 
     dict_values = pull_events_tsv_from_s3(s3, bucket_name, object_key)
     
-    if event['path'] == '/events':
+    if event['path'] == '/events/unique_random':
+        response = handle_events_path(event, dict_values, num_events=1, unique_random=True)
+    elif event['path'] == '/events':
         response = handle_events_path(event, dict_values, num_events=1)
     elif event['path'] == '/categories':
         response = handle_categories_path(dict_values)
