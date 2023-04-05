@@ -60,14 +60,8 @@ def get_all_cats_from_events_tsv(list_of_event_dicts:list):
         random.shuffle(list_of_event_dicts)
 
 
-def handle_events_path(event, list_of_event_dicts, num_events=6, unique_random=False):
+def handle_events_path(event, list_of_event_dicts, num_events=6):
     game_id = calculate_days_since_start()
-
-    if unique_random:
-        random.shuffle(list_of_event_dicts)
-    else:
-        random.seed(game_id)
-        random.shuffle(list_of_event_dicts)
 
     if event.get('queryStringParameters'):
         cat_filter = event['queryStringParameters'].get('cat_filter', None)
@@ -76,13 +70,19 @@ def handle_events_path(event, list_of_event_dicts, num_events=6, unique_random=F
         
         num_events = int(event['queryStringParameters'].get('num_events', num_events)) 
 
-
+        random_param = event['queryStringParameters'].get('random', 1)
+        if random_param == 'true':
+            random.shuffle(list_of_event_dicts)
+        else:
+            random.seed(game_id)
+            random.shuffle(list_of_event_dicts)
     
     response = {
         'statusCode': 200,
         'body': json.dumps({
             'seed_value': game_id,
-            'event_list': list_of_event_dicts[:num_events]
+            'event_list': list_of_event_dicts[:num_events],
+            'random': random_param
         })
     }
     return response
@@ -113,14 +113,10 @@ def handler(event, context):
 
     dict_values = pull_events_tsv_from_s3(s3, bucket_name, object_key)
     
-    if event['path'] == '/events/unique_random':
-        response = handle_events_path(event, dict_values, num_events=1, unique_random=True)
-    elif event['path'] == '/events':
+    if event['path'] == '/events':
         response = handle_events_path(event, dict_values, num_events=1)
     elif event['path'] == '/categories':
         response = handle_categories_path(dict_values)
     else:
         response = {'statusCode':400, 'body':'not found'}
     return response
-
-

@@ -13,6 +13,8 @@ resource "aws_api_gateway_method" "events_method" {
   request_parameters = {
     "method.request.querystring.cat_filter" = true
     "method.request.querystring.num_events" = true
+    "method.request.querystring.random" = true
+
   }
 }
 
@@ -28,5 +30,7 @@ resource "aws_api_gateway_integration" "events_integration" {
   request_parameters = {
     "integration.request.querystring.cat_filter" = "method.request.querystring.cat_filter"
     "integration.request.querystring.num_events" = "method.request.querystring.num_events"
+    "integration.request.querystring.random" = "method.request.querystring.random"
+
   }
 }
