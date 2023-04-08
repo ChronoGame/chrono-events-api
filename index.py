@@ -28,17 +28,11 @@ def calculate_days_since_start() -> int:
     return delta.days
 
 
-def random_shuffle_by_seed(list_of_event_dicts: list, seed_value: int=69) -> list:
-    """take a list of event dicts and shuffle it based on a seed value"""
-    random.seed(seed_value)
-    shuffled_event_dicts = random.shuffle(list_of_event_dicts)
-    
-    return shuffled_event_dicts
-
 def cat_is_filter_value(event: dict, filter_value: str=None) -> bool:
     if filter_value is None: return True
     cats = event['cat'].split(',')
     return filter_value in cats
+
 
 def get_all_cats_from_events_tsv(list_of_event_dicts:list):
     all_cats = []
@@ -53,19 +47,15 @@ def get_all_cats_from_events_tsv(list_of_event_dicts:list):
     
     return dict(cat_counts)
 
-    if not unique_random_shuffle:
-        random.seed(game_id)
-        random.shuffle(list_of_event_dicts)  
-    else:
-        random.shuffle(list_of_event_dicts)
-
 
 def handle_events_path(event, list_of_event_dicts, num_events=6):
+    randint_game_id = random.randint(1,1e6)
     game_id = calculate_days_since_start()
 
     if event.get('queryStringParameters'):
         cat_filter = event['queryStringParameters'].get('cat_filter', None)
         partial_filter_by_cat = partial(cat_is_filter_value, filter_value=cat_filter)
+
         list_of_event_dicts = list(filter(partial_filter_by_cat, list_of_event_dicts))
         
         num_events = int(event['queryStringParameters'].get('num_events', num_events)) 
@@ -73,16 +63,23 @@ def handle_events_path(event, list_of_event_dicts, num_events=6):
         random_param = event['queryStringParameters'].get('random', 1)
         if random_param == 'true':
             random.shuffle(list_of_event_dicts)
+            game_id = f'rand_{randint_game_id}'
         else:
             random.seed(game_id)
             random.shuffle(list_of_event_dicts)
     
     response = {
         'statusCode': 200,
+        'headers': {
+            'Access-Control-Allow-Headers': 'Content-Type',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'OPTIONS,POST,GET'
+        },
         'body': json.dumps({
             'seed_value': game_id,
+            'game_id': game_id,
             'event_list': list_of_event_dicts[:num_events],
-            'random': random_param
+            'bonus_list': list_of_event_dicts[num_events:num_events*2]
         })
     }
     return response
@@ -92,6 +89,11 @@ def handle_categories_path(list_of_event_dicts):
     all_cats = get_all_cats_from_events_tsv(list_of_event_dicts)
     response = {
         'statusCode': 200,
+        'headers': {
+            'Access-Control-Allow-Headers': 'Content-Type',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'OPTIONS,POST,GET'
+        },
         'body': json.dumps({
             'all_cats': all_cats,
         })
@@ -99,8 +101,8 @@ def handle_categories_path(list_of_event_dicts):
 
     return response
 
-def handler(event, context):
 
+def handler(event, context):
     s3 = boto3.client('s3')    
 
     # session = boto3.Session(profile_name='tjwdev')
@@ -109,7 +111,6 @@ def handler(event, context):
 
     bucket_name = 'chrono-events-api'
     object_key = 'events.tsv'
-    num_events = 6
 
     dict_values = pull_events_tsv_from_s3(s3, bucket_name, object_key)
     
