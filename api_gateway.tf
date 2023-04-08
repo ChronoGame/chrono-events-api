@@ -1,21 +1,25 @@
+resource "random_id" "deployment_uuid" {
+  byte_length = 8
+}
+
 variable "deployment_uuid" {
   description = "Unique identifier for each deployment, used to force redeployment"
   default     = ""
 }
-
 
 resource "aws_api_gateway_deployment" "chrono_deployment" {
   depends_on = [aws_api_gateway_integration.events_integration, aws_api_gateway_integration.categories_integration]
 
   rest_api_id = aws_api_gateway_rest_api.chrono_api.id
   #stage_name  = "prod"
-  variables   = { "deployment_uuid" = var.deployment_uuid }
-
+  variables   = { "deployment_uuid" = var.deployment_uuid != "" ? var.deployment_uuid : random_id.deployment_uuid.hex }
 
   lifecycle {
     create_before_destroy = true
   }
 }
+
+
 
 resource "aws_api_gateway_stage" "chrono_stage" {
   stage_name    = "prod"
