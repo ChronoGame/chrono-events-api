@@ -23,8 +23,3 @@ resource "aws_s3_bucket_object" "csv_file" {
   source = "${path.module}/events.tsv"
   acl    = "private"
 }
-
-resource "aws_s3_bucket" "stats_bucket" {
-  bucket        = "${var.project_name}-stats"
-  force_destroy = true
-}
