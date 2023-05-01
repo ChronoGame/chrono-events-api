@@ -101,6 +101,21 @@ def handle_categories_path(list_of_event_dicts):
 
     return response
 
+def handle_alerts_path():
+    response = {
+        'statusCode': 200,
+        'headers': {
+            'Access-Control-Allow-Headers': 'Content-Type',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'OPTIONS,POST,GET'
+        },
+        'body': json.dumps({
+            'alert': 'hello world',
+        })
+    }
+
+    return response
+
 
 def handler(event, context):
     s3 = boto3.client('s3')    
@@ -118,6 +133,8 @@ def handler(event, context):
         response = handle_events_path(event, dict_values, num_events=1)
     elif event['path'] == '/categories':
         response = handle_categories_path(dict_values)
+    elif event['path'] == '/alerts':
+        response = handle_alerts_path()
     else:
         response = {'statusCode':400, 'body':'not found'}
     return response

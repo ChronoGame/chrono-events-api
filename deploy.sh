@@ -34,3 +34,5 @@ curl https://ikra79u7u7.execute-api.us-east-1.amazonaws.com/prod/categories;
 echo "test: CORS"
 curl -v -X OPTIONS -H "Access-Control-Request-Method: GET" -H "Origin: https://example.com" https://ikra79u7u7.execute-api.us-east-1.amazonaws.com/prod/events;
 
+echo "test: alerts"
+curl -v -X OPTIONS -H "Access-Control-Request-Method: GET" -H "Origin: https://example.com" https://ikra79u7u7.execute-api.us-east-1.amazonaws.com/prod/alerts;
